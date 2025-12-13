@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile, UserRole, AppRole } from '@/types';
+import { Profile, AppRole } from '@/types';
+import { useDemoMode, DEMO_USERS } from './useDemoMode';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +14,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
+  isDemoMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { isDemoMode, demoUser, demoProfile, logoutDemo } = useDemoMode();
 
   const fetchUserData = async (userId: string) => {
     // Fetch profile
@@ -48,6 +52,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // If in demo mode, use demo data
+    if (isDemoMode && demoUser) {
+      const mockUser = {
+        id: demoUser.id,
+        email: demoUser.email,
+        app_metadata: {},
+        user_metadata: { display_name: demoUser.displayName },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as User;
+      
+      setUser(mockUser);
+      setProfile(demoProfile);
+      setRoles([demoUser.role]);
+      setIsLoading(false);
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -78,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isDemoMode, demoUser, demoProfile]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -102,7 +124,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (isDemoMode) {
+      logoutDemo();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setRoles([]);
+    } else {
+      await supabase.auth.signOut();
+    }
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
@@ -118,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signOut,
       hasRole,
+      isDemoMode,
     }}>
       {children}
     </AuthContext.Provider>

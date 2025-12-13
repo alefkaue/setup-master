@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, MousePointer, Users, TrendingUp, Link2, Copy, Check, Save } from 'lucide-react';
+import { LogOut, MousePointer, Users, TrendingUp, Link2, Copy, Check, Save, Play } from 'lucide-react';
 import { PartnerConfig } from '@/types';
 
 export default function PartnerDashboard() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isDemoMode } = useAuth();
+  const { demoPartnerConfig } = useDemoMode();
   const { toast } = useToast();
   const [partnerConfig, setPartnerConfig] = useState<PartnerConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,10 +30,20 @@ export default function PartnerDashboard() {
   const [aliexpressCode, setAliexpressCode] = useState('');
 
   useEffect(() => {
+    if (isDemoMode) {
+      setPartnerConfig(demoPartnerConfig);
+      setAmazonTag(demoPartnerConfig.amazon_tag || '');
+      setKabumCode(demoPartnerConfig.kabum_code || '');
+      setTerabyteCode(demoPartnerConfig.terabyte_code || '');
+      setAliexpressCode(demoPartnerConfig.aliexpress_code || '');
+      setIsLoading(false);
+      return;
+    }
+
     if (user) {
       fetchPartnerConfig();
     }
-  }, [user]);
+  }, [user, isDemoMode, demoPartnerConfig]);
 
   const fetchPartnerConfig = async () => {
     const { data } = await supabase
@@ -51,6 +64,11 @@ export default function PartnerDashboard() {
   };
 
   const handleSaveConfig = async () => {
+    if (isDemoMode) {
+      toast({ title: 'Modo Demo', description: 'Alterações não são salvas no modo demo' });
+      return;
+    }
+    
     if (!partnerConfig) return;
     
     setIsSaving(true);
@@ -127,7 +145,13 @@ export default function PartnerDashboard() {
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="text-2xl font-bold tracking-tighter font-display">UPGRADE</Link>
           <div className="flex items-center gap-4">
-            <span className="text-sm px-2 py-1 bg-ai-glow/20 text-ai-glow rounded">Parceiro</span>
+            {isDemoMode && (
+              <Badge variant="outline" className="gap-1 border-primary/50 text-primary">
+                <Play className="h-3 w-3" />
+                Demo
+              </Badge>
+            )}
+            <span className="text-sm px-2 py-1 bg-primary/20 text-primary rounded">Parceiro</span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>

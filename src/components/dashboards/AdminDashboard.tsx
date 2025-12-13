@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode, DEMO_USERS } from '@/hooks/useDemoMode';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { 
   LogOut, Users, Briefcase, Package, UserPlus, Trash2, 
-  Database, Loader2, Shield
+  Database, Loader2, Shield, Play
 } from 'lucide-react';
 import { PartnerConfig, Profile } from '@/types';
 
 export default function AdminDashboard() {
-  const { signOut } = useAuth();
+  const { signOut, isDemoMode } = useAuth();
+  const { demoPartnerConfig, demoProjects, demoItems } = useDemoMode();
   const { toast } = useToast();
   const [partners, setPartners] = useState<PartnerConfig[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -31,8 +34,23 @@ export default function AdminDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (isDemoMode) {
+      // Use demo data
+      setPartners([demoPartnerConfig]);
+      setProfiles(DEMO_USERS.map(u => ({
+        id: u.id,
+        display_name: u.displayName,
+        monthly_available_budget: 3000,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })));
+      setTotalItems(demoItems.length);
+      setIsLoading(false);
+      return;
+    }
+
     fetchAllData();
-  }, []);
+  }, [isDemoMode, demoPartnerConfig, demoItems]);
 
   const fetchAllData = async () => {
     // Fetch partners
@@ -61,6 +79,11 @@ export default function AdminDashboard() {
   };
 
   const handleCreatePartner = async () => {
+    if (isDemoMode) {
+      toast({ title: 'Modo Demo', description: 'Alterações não são salvas no modo demo' });
+      return;
+    }
+    
     if (!newPartnerEmail || !newPartnerName || !newPartnerSlug) {
       toast({ title: 'Erro', description: 'Preencha todos os campos', variant: 'destructive' });
       return;
@@ -97,6 +120,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeletePartner = async (partnerId: string) => {
+    if (isDemoMode) {
+      toast({ title: 'Modo Demo', description: 'Alterações não são salvas no modo demo' });
+      return;
+    }
+    
     const { error } = await supabase
       .from('partners_config')
       .delete()
@@ -136,6 +164,12 @@ export default function AdminDashboard() {
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="text-2xl font-bold tracking-tighter font-display">UPGRADE</Link>
           <div className="flex items-center gap-4">
+            {isDemoMode && (
+              <Badge variant="outline" className="gap-1 border-primary/50 text-primary">
+                <Play className="h-3 w-3" />
+                Demo
+              </Badge>
+            )}
             <span className="text-sm px-2 py-1 bg-destructive/20 text-destructive rounded flex items-center gap-1">
               <Shield className="h-3 w-3" />
               Admin

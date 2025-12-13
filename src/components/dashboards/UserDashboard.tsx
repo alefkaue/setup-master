@@ -1,36 +1,51 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { 
   LogOut, Wallet, TrendingUp, CreditCard, Plus, Trash2, ExternalLink, 
-  Sparkles, Package, Search
+  Sparkles, Package, Search, Play
 } from 'lucide-react';
 import { Project, Item, StoreOption } from '@/types';
 import { formatCurrency, calculateProjectTotals, getCashKingOption, getCashFlowOption } from '@/lib/financial-intelligence';
 
 export default function UserDashboard() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isDemoMode } = useAuth();
+  const { demoProfile, demoProjects, demoItems } = useDemoMode();
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Use demo data when in demo mode
+  const currentProfile = isDemoMode ? demoProfile : profile;
+
   useEffect(() => {
+    if (isDemoMode) {
+      setProjects(demoProjects);
+      setActiveProject(demoProjects[0] || null);
+      setItems(demoItems);
+      setIsLoading(false);
+      return;
+    }
+
     if (user) {
       fetchProjects();
     }
-  }, [user]);
+  }, [user, isDemoMode, demoProjects, demoItems]);
 
   useEffect(() => {
-    if (activeProject) {
+    if (!isDemoMode && activeProject) {
       fetchItems(activeProject.id);
     }
-  }, [activeProject]);
+  }, [activeProject, isDemoMode]);
 
   const fetchProjects = async () => {
     const { data } = await supabase
@@ -118,7 +133,7 @@ export default function UserDashboard() {
   };
 
   const { totalProject, monthlyFlow, pixTotal } = calculateProjectTotals(items);
-  const monthlyBudget = profile?.monthly_available_budget || 3000;
+  const monthlyBudget = currentProfile?.monthly_available_budget || 3000;
   const budgetWarning = monthlyFlow > monthlyBudget * 0.3;
 
   if (isLoading) {
@@ -135,8 +150,14 @@ export default function UserDashboard() {
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="text-2xl font-bold tracking-tighter font-display">UPGRADE</Link>
           <nav className="flex items-center gap-4">
+            {isDemoMode && (
+              <Badge variant="outline" className="gap-1 border-primary/50 text-primary">
+                <Play className="h-3 w-3" />
+                Demo
+              </Badge>
+            )}
             <span className="text-sm text-muted-foreground hidden sm:block">
-              {profile?.display_name || user?.email}
+              {currentProfile?.display_name || user?.email}
             </span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
@@ -147,10 +168,9 @@ export default function UserDashboard() {
 
       <main className="flex-1 p-6">
         <div className="container max-w-6xl">
-          {/* Welcome */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">
-              Olá, {profile?.display_name || 'Usuário'}!
+              Olá, {currentProfile?.display_name || 'Usuário'}!
             </h1>
             <p className="text-muted-foreground">
               {activeProject ? `Projeto: ${activeProject.name}` : 'Seu painel financeiro'}
