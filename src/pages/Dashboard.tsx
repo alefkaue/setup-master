@@ -1,152 +1,95 @@
-import React, { useState } from 'react';
-import { useApp } from '@/context/AppContext';
-import Header from '@/components/layout/Header';
-import KPICard from '@/components/dashboard/KPICard';
-import ProgressBar from '@/components/dashboard/ProgressBar';
-import ItemsTable from '@/components/dashboard/ItemsTable';
-import EmptyState from '@/components/dashboard/EmptyState';
-import SmartAddModal from '@/components/modals/SmartAddModal';
-import { 
-  DollarSign, 
-  CreditCard, 
-  Wallet, 
-  Plus,
-  TrendingUp,
-  Package
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LogOut, Wallet, Package, Sparkles } from 'lucide-react';
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-};
+export default function Dashboard() {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
 
-const Dashboard: React.FC = () => {
-  const { 
-    user, 
-    currentProject, 
-    items, 
-    stats, 
-    deleteItem, 
-    addItem,
-    createProject 
-  } = useApp();
-  const [isSmartAddOpen, setIsSmartAddOpen] = useState(false);
+  const monthlyBudget = 3000;
 
-  const projectItems = currentProject 
-    ? items.filter(item => item.projectId === currentProject.id)
-    : items;
-
-  const handleCreateProject = () => {
-    createProject('Novo Projeto', 'Meu novo setup');
+  const handleSignOut = () => {
+    window.location.href = '/';
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky top-0 z-50 border-b-2 border-foreground/10 bg-background">
+        <div className="container flex h-16 items-center justify-between">
+          <Link to="/" className="text-2xl font-bold tracking-tighter">UPGRADE</Link>
+          <nav className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </nav>
+        </div>
+      </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Welcome Section */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">
-              Olá, {user?.name || 'Usuário'}! 👋
+      <main className="flex-1 p-8">
+        <div className="container max-w-4xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">
+              Olá, Usuário!
             </h1>
             <p className="text-muted-foreground">
-              {currentProject 
-                ? `Gerenciando: ${currentProject.name}`
-                : 'Seu centro de comando financeiro'}
+              Bem-vindo ao seu painel de inteligência financeira.
             </p>
           </div>
 
-          <button
-            onClick={() => setIsSmartAddOpen(true)}
-            className="btn-brutal flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Smart Add</span>
-          </button>
-        </div>
+          <div className="grid gap-4 md:grid-cols-3 mb-8">
+            <Card className="border-2 hover:border-foreground/50 transition-colors">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                  Orçamento Mensal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(monthlyBudget)}</div>
+              </CardContent>
+            </Card>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <KPICard
-            title="Total do Projeto"
-            value={formatCurrency(stats.totalProjectValue)}
-            subtitle={`${stats.itemCount} itens selecionados`}
-            icon={DollarSign}
-            variant="default"
-          />
-          <KPICard
-            title="Fluxo Mensal (Parcelas)"
-            value={formatCurrency(stats.monthlyInstallments)}
-            subtitle="Soma das parcelas mensais"
-            icon={CreditCard}
-            variant={stats.incomeCommitment > 50 ? 'warning' : 'default'}
-          />
-          <KPICard
-            title="Meta Pix (À Vista)"
-            value={formatCurrency(stats.pixTotal)}
-            subtitle={`Economia de ${formatCurrency(stats.totalProjectValue - stats.pixTotal)}`}
-            icon={Wallet}
-            variant="accent"
-          />
-        </div>
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  Projetos Ativos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+              </CardContent>
+            </Card>
 
-        {/* Income Commitment Bar */}
-        {user?.monthlyIncome && stats.monthlyInstallments > 0 && (
-          <div className="kpi-card mb-8 animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">
-                  Comprometimento de Renda
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Baseado em renda de {formatCurrency(user.monthlyIncome)}/mês
-                </p>
-              </div>
-            </div>
-            <ProgressBar
-              value={stats.incomeCommitment}
-              label="Parcelas sobre a renda mensal"
-            />
-            {stats.incomeCommitment > 30 && (
-              <p className="mt-3 text-sm text-warning">
-                ⚠️ Atenção: Recomendamos não comprometer mais de 30% da renda com parcelas.
-              </p>
-            )}
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-ai-glow" />
+                  IA Ativa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-ai-glow">Online</div>
+              </CardContent>
+            </Card>
           </div>
-        )}
 
-        {/* Items Section */}
-        {projectItems.length > 0 ? (
-          <ItemsTable
-            items={projectItems}
-            onDeleteItem={deleteItem}
-            onSelectItem={(item) => console.log('Selected:', item)}
-          />
-        ) : (
-          <EmptyState
-            hasProject={!!currentProject}
-            onCreateProject={handleCreateProject}
-            onAddItem={() => setIsSmartAddOpen(true)}
-          />
-        )}
+          <Card className="border-2 border-dashed">
+            <CardContent className="py-12 text-center">
+              <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-semibold text-lg mb-2">Dashboard Completo</h3>
+              <p className="text-muted-foreground mb-4">
+                O sistema está configurado e pronto para uso.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Conecte o Supabase para habilitar todos os recursos.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </main>
-
-      {/* Smart Add Modal */}
-      <SmartAddModal
-        isOpen={isSmartAddOpen}
-        onClose={() => setIsSmartAddOpen(false)}
-        onAddItem={addItem}
-        projectId={currentProject?.id || 'default'}
-      />
     </div>
   );
-};
-
-export default Dashboard;
+}
