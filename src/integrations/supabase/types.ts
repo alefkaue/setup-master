@@ -14,16 +14,220 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      click_logs: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          item_name: string | null
+          partner_id: string | null
+          store_name: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          item_name?: string | null
+          partner_id?: string | null
+          store_name?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          item_name?: string | null
+          partner_id?: string | null
+          store_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "click_logs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          ai_recommendation: string | null
+          category: string | null
+          created_at: string | null
+          id: string
+          name: string
+          project_id: string
+          status: string | null
+          stores_json: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          project_id: string
+          status?: string | null
+          stores_json?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_recommendation?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          status?: string | null
+          stores_json?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners_config: {
+        Row: {
+          aliexpress_code: string | null
+          amazon_tag: string | null
+          created_at: string | null
+          id: string
+          kabum_code: string | null
+          mercadolivre_code: string | null
+          name: string
+          slug: string
+          terabyte_code: string | null
+          total_clicks: number | null
+          unique_visitors: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          aliexpress_code?: string | null
+          amazon_tag?: string | null
+          created_at?: string | null
+          id?: string
+          kabum_code?: string | null
+          mercadolivre_code?: string | null
+          name: string
+          slug: string
+          terabyte_code?: string | null
+          total_clicks?: number | null
+          unique_visitors?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          aliexpress_code?: string | null
+          amazon_tag?: string | null
+          created_at?: string | null
+          id?: string
+          kabum_code?: string | null
+          mercadolivre_code?: string | null
+          name?: string
+          slug?: string
+          terabyte_code?: string | null
+          total_clicks?: number | null
+          unique_visitors?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string
+          monthly_available_budget: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          monthly_available_budget?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          monthly_available_budget?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "partner" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +354,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "partner", "admin"],
+    },
   },
 } as const
