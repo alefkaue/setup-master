@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, LogIn, UserPlus, Loader2 } from 'lucide-react';
 
 export default function Auth() {
+  const { user, isLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -16,6 +18,12 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, isLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,12 +33,14 @@ export default function Auth() {
     }
 
     setIsSubmitting(true);
-    // Simulate login - replace with actual Supabase auth when connected
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const { error } = await signIn(email, password);
     setIsSubmitting(false);
-    
-    toast({ title: 'Sucesso!', description: 'Login realizado com sucesso' });
-    navigate('/dashboard');
+
+    if (error) {
+      toast({ title: 'Erro ao entrar', description: error.message, variant: 'destructive' });
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -46,27 +56,28 @@ export default function Auth() {
     }
 
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const { error } = await signUp(email, password, displayName);
     setIsSubmitting(false);
 
-    toast({ title: 'Conta criada!', description: 'Você já pode usar o UPGRADE' });
-    navigate('/dashboard');
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast({ title: 'Erro', description: 'Este email já está cadastrado', variant: 'destructive' });
+      } else {
+        toast({ title: 'Erro ao criar conta', description: error.message, variant: 'destructive' });
+      }
+    } else {
+      toast({ title: 'Conta criada!', description: 'Você já pode usar o UPGRADE' });
+      navigate('/dashboard');
+    }
   };
 
-  const quickLogin = async (type: 'admin' | 'partner' | 'user') => {
-    const creds = {
-      admin: { email: 'admin@upgrade.com', password: 'admin123' },
-      partner: { email: 'parceiro@faguas.com', password: 'parceiro123' },
-      user: { email: 'user@teste.com', password: 'user123' },
-    };
-    
-    setEmail(creds[type].email);
-    setPassword(creds[type].password);
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSubmitting(false);
-    navigate('/dashboard');
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -170,15 +181,6 @@ export default function Auth() {
                 </form>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 pt-6 border-t">
-              <p className="text-sm text-muted-foreground text-center mb-4">Login rápido (desenvolvimento)</p>
-              <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" size="sm" onClick={() => quickLogin('admin')}>Admin</Button>
-                <Button variant="outline" size="sm" onClick={() => quickLogin('partner')}>Parceiro</Button>
-                <Button variant="outline" size="sm" onClick={() => quickLogin('user')}>Usuário</Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </main>
